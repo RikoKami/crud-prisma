@@ -29,3 +29,27 @@ export const allGroups = async (
     message: "Operation Successful",
   });
 };
+
+export const groups = async (req, res) => {
+  const { id } = req.params;
+  const groups = await prisma.group.findFirst({
+    where: {
+      id: Number(id),
+    },
+  });
+
+  res.json({
+    success: true,
+    payload: groups,
+    message: "Operation Successful",
+  });
+
+  // FIXME:  Cannot set headers after they are sent to the client
+  if (!groups) {
+    return res.status(404).send({
+      success: false,
+      payload: null,
+      message: "Group not found",
+    });
+  }
+};
