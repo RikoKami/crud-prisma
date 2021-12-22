@@ -1,40 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import express from "express";
+const app = express();
+const routes = require("./routes");
 
-const prisma = new PrismaClient();
+app.use(express.json());
+app.use(routes);
 
-async function main() {
-  const newUser = await prisma.user.create({
-    data: {
-      name: "Larissa Dantas",
-      email: "lari@example.com",
-      groups: {
-        connectOrCreate: {
-          where: {
-            id: 1,
-          },
-          create: {
-            id: 1,
-            title: "Group 1",
-          },
-        },
-      },
-    },
-  });
-
-  console.log("Novo usuário:", newUser);
-
-  const allUsers = await prisma.user.findMany({
-    include: {
-      groups: true,
-    },
-  });
-
-  console.log("Todos os usuários:", allUsers);
-  console.dir(allUsers, { depth: null });
-}
-
-main()
-  .catch((e) => console.error(e))
-  .finally(async () => await prisma.$disconnect());
-
-console.log("Finished");
+app.listen(3000, () => {
+  console.log("Server started on port 3000");
+});
