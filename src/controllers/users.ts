@@ -1,15 +1,12 @@
-import { Group, PrismaClient, User } from "@prisma/client";
+import { PrismaClient, User } from "@prisma/client";
+import { Response } from "../utils";
 
 const prisma = new PrismaClient();
 
 export const allUsers = async (
   _: any,
   res: {
-    json: (arg0: {
-      success: boolean;
-      payload: User[];
-      message: string;
-    }) => void;
+    json: ({}: Response<User[]>) => void;
   }
 ) => {
   const users = await prisma.user.findMany({
@@ -27,11 +24,11 @@ export const allUsers = async (
 export const user = async (
   req: { params: { id: any } },
   res: {
-    json: (arg0: { success: boolean; payload: User; message: string }) => void;
+    json: ({}: Response<User>) => void;
   }
 ) => {
   const { id } = req.params;
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: {
       id: Number(id),
     },
@@ -41,7 +38,7 @@ export const user = async (
   });
 
   if (!user) {
-    res.json({
+    return res.json({
       success: false,
       payload: null,
       message: "User not found",
@@ -56,9 +53,26 @@ export const user = async (
 };
 
 export const createUser = async (
-  req: { body: { name: string; email: string; groups?: Group[] } },
-  res: { json: (arg0: { success: boolean; payload: User }) => void }
+  req: { body: User },
+  res: { json: ({}: Response<User>) => void }
 ) => {
+  const userEmail = await prisma.user.findFirst({
+    where: {
+      email: req.body.email,
+    },
+    select: {
+      email: true,
+    },
+  });
+
+  if (req.body.email === userEmail.email) {
+    return res.json({
+      success: false,
+      payload: null,
+      message: "User not created",
+    });
+  }
+
   const result = await prisma.user.create({
     data: {
       ...req.body,
@@ -68,5 +82,39 @@ export const createUser = async (
   res.json({
     success: true,
     payload: result,
+    message: "Operation Successful",
+  });
+};
+
+export const deleteUser = async (
+  req: { body: { id: number } },
+  res: { json: ({}: Response<User>) => void }
+) => {
+  const { id } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: Number(id),
+    },
+  });
+
+  if (!user) {
+    return res.json({
+      success: false,
+      payload: null,
+      message: "User not found",
+    });
+  }
+
+  await prisma.user.delete({
+    where: {
+      id: Number(id),
+    },
+  });
+
+  res.json({
+    success: true,
+    payload: user,
+    message: `User ${user.name} deleted with id ${user.id}`,
   });
 };
